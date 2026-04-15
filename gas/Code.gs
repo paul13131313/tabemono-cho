@@ -39,22 +39,16 @@ function doGet(e) {
 // ============================================================
 function doPost(e) {
   try {
-    var body = e.postData.contents;
-
-    // 署名検証
-    var signature = e.parameter['x-line-signature']
-      || (e && e.headers && e.headers['x-line-signature'])
-      || (e && e.headers && e.headers['X-Line-Signature'])
-      || '';
-
-    if (!verifySignature(body, signature)) {
+    // リクエストが空 → 即200
+    if (!e || !e.postData || !e.postData.contents) {
       return ContentService.createTextOutput('ok');
     }
 
-    var json   = JSON.parse(body);
+    var body = e.postData.contents;
+    var json = JSON.parse(body);
     var events = json.events || [];
 
-    // イベントが空（検証リクエスト等）→ 即 200
+    // イベントが空（検証リクエスト等）→ 即200
     if (events.length === 0) {
       return ContentService.createTextOutput('ok');
     }
