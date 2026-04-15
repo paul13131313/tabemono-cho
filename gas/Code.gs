@@ -2,15 +2,17 @@
 // 食べもの帳 — LINE Bot + GAS Backend
 // ============================================================
 
-// ---------- 定数 ----------
-var PROPS        = PropertiesService.getScriptProperties();
-var TOKEN        = PROPS.getProperty('LINE_CHANNEL_ACCESS_TOKEN');
-var SECRET       = PROPS.getProperty('LINE_CHANNEL_SECRET');
-var ANTHROPIC_KEY = PROPS.getProperty('ANTHROPIC_API_KEY');
-var SS_ID        = PROPS.getProperty('SPREADSHEET_ID');
+// ---------- 定数（遅延取得） ----------
+function prop(key) {
+  return PropertiesService.getScriptProperties().getProperty(key);
+}
+function TOKEN()        { return prop('LINE_CHANNEL_ACCESS_TOKEN'); }
+function SECRET()       { return prop('LINE_CHANNEL_SECRET'); }
+function ANTHROPIC_KEY(){ return prop('ANTHROPIC_API_KEY'); }
+function SS_ID()        { return prop('SPREADSHEET_ID'); }
 
 function getSheet(name) {
-  return SpreadsheetApp.openById(SS_ID).getSheetByName(name);
+  return SpreadsheetApp.openById(SS_ID()).getSheetByName(name);
 }
 
 // ============================================================
@@ -36,70 +38,85 @@ function doGet(e) {
 // doPost — LINE Webhook 受信
 // ============================================================
 function doPost(e) {
-  var body = e.postData.contents;
+  try {
+    var body = e.postData.contents;
 
-  // 署名検証
-  var signature = e.parameter['x-line-signature']
-    || (e && e.headers && e.headers['x-line-signature'])
-    || (e && e.headers && e.headers['X-Line-Signature'])
-    || '';
+    // 署名検証
+    var signature = e.parameter['x-line-signature']
+      || (e && e.headers && e.headers['x-line-signature'])
+      || (e && e.headers && e.headers['X-Line-Signature'])
+      || '';
 
-  if (!verifySignature(body, signature)) {
-    return ContentService.createTextOutput('invalid signature');
-  }
-
-  var json   = JSON.parse(body);
-  var events = json.events || [];
-
-  events.forEach(function(event) {
-    if (event.type !== 'message' || event.message.type !== 'text') return;
-
-    var replyToken = event.replyToken;
-    var userId     = event.source.userId;
-    var text       = event.message.text.trim();
-
-    // メンバー登録 / 更新
-    upsertMember(userId);
-
-    if (text === 'まとめ') {
-      var summary = buildTodaySummary(userId);
-      replyMessage(replyToken, summary);
-      return;
+    if (!verifySignature(body, signature)) {
+      return ContentService.createTextOutput('ok');
     }
 
-    // Claude API で栄養解析
-    var parsed = analyzeWithClaude(text);
-    if (!parsed || !parsed.foods) {
-      replyMessage(replyToken, '解析できませんでした。食べたものをテキストで送ってください。');
-      return;
+    var json   = JSON.parse(body);
+    var events = json.events || [];
+
+    // イベントが空（検証リクエスト等）→ 即 200
+    if (events.length === 0) {
+      return ContentService.createTextOutput('ok');
     }
 
-    // ログ書き込み
-    var displayName = getDisplayName(userId);
-    var sheet = getSheet('logs');
-    sheet.appendRow([
-      new Date(),
-      userId,
-      displayName,
-      text,
-      JSON.stringify(parsed.foods),
-      parsed.total.cal,
-      parsed.total.p,
-      parsed.total.f,
-      parsed.total.c
-    ]);
+    var VERIFY_TOKEN = '00000000-0000-0000-0000-000000000000';
 
-    // リプライ組み立て
-    var lines = ['✅ 記録しました'];
-    parsed.foods.forEach(function(f) {
-      lines.push(f.name + ': 約' + f.cal + 'kcal');
+    events.forEach(function(event) {
+      // 検証用 replyToken → スキップ
+      if (event.replyToken === VERIFY_TOKEN) return;
+
+      if (event.type !== 'message' || event.message.type !== 'text') return;
+
+      var replyToken = event.replyToken;
+      var userId     = event.source.userId;
+      var text       = event.message.text.trim();
+
+      // メンバー登録 / 更新
+      upsertMember(userId);
+
+      if (text === 'まとめ') {
+        var summary = buildTodaySummary(userId);
+        replyMessage(replyToken, summary);
+        return;
+      }
+
+      // Claude API で栄養解析
+      var parsed = analyzeWithClaude(text);
+      if (!parsed || !parsed.foods) {
+        replyMessage(replyToken, '解析できませんでした。食べたものをテキストで送ってください。');
+        return;
+      }
+
+      // ログ書き込み
+      var displayName = getDisplayName(userId);
+      var sheet = getSheet('logs');
+      sheet.appendRow([
+        new Date(),
+        userId,
+        displayName,
+        text,
+        JSON.stringify(parsed.foods),
+        parsed.total.cal,
+        parsed.total.p,
+        parsed.total.f,
+        parsed.total.c
+      ]);
+
+      // リプライ組み立て
+      var lines = ['✅ 記録しました'];
+      parsed.foods.forEach(function(f) {
+        lines.push(f.name + ': 約' + f.cal + 'kcal');
+      });
+      lines.push('──────────');
+      lines.push('合計: 約' + parsed.total.cal + 'kcal');
+      lines.push('P: ' + parsed.total.p + 'g / F: ' + parsed.total.f + 'g / C: ' + parsed.total.c + 'g');
+
+      replyMessage(replyToken, lines.join('\n'));
     });
-    lines.push('──────────');
-    lines.push('合計: 約' + parsed.total.cal + 'kcal');
-    lines.push('P: ' + parsed.total.p + 'g / F: ' + parsed.total.f + 'g / C: ' + parsed.total.c + 'g');
 
-    replyMessage(replyToken, lines.join('\n'));
-  });
+  } catch (err) {
+    Logger.log('doPost error: ' + err);
+  }
 
   return ContentService.createTextOutput('ok');
 }
@@ -123,7 +140,7 @@ function analyzeWithClaude(text) {
     method: 'post',
     contentType: 'application/json',
     headers: {
-      'x-api-key': ANTHROPIC_KEY,
+      'x-api-key': ANTHROPIC_KEY(),
       'anthropic-version': '2023-06-01'
     },
     payload: JSON.stringify(payload),
@@ -228,7 +245,7 @@ function replyMessage(replyToken, text) {
   UrlFetchApp.fetch('https://api.line.me/v2/bot/message/reply', {
     method: 'post',
     contentType: 'application/json',
-    headers: { 'Authorization': 'Bearer ' + TOKEN },
+    headers: { 'Authorization': 'Bearer ' + TOKEN() },
     payload: JSON.stringify({
       replyToken: replyToken,
       messages: [{ type: 'text', text: text }]
@@ -241,7 +258,7 @@ function pushMessage(userId, text) {
   UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
     method: 'post',
     contentType: 'application/json',
-    headers: { 'Authorization': 'Bearer ' + TOKEN },
+    headers: { 'Authorization': 'Bearer ' + TOKEN() },
     payload: JSON.stringify({
       to: userId,
       messages: [{ type: 'text', text: text }]
@@ -272,7 +289,7 @@ function upsertMember(userId) {
 function getLineProfile(userId) {
   try {
     var res = UrlFetchApp.fetch('https://api.line.me/v2/bot/profile/' + userId, {
-      headers: { 'Authorization': 'Bearer ' + TOKEN },
+      headers: { 'Authorization': 'Bearer ' + TOKEN() },
       muteHttpExceptions: true
     });
     return JSON.parse(res.getContentText());
@@ -297,7 +314,7 @@ function verifySignature(body, signature) {
   if (!signature) return false;
   var hmac = Utilities.computeHmacSha256Signature(
     Utilities.newBlob(body).getBytes(),
-    Utilities.newBlob(SECRET).getBytes()
+    Utilities.newBlob(SECRET()).getBytes()
   );
   var expected = Utilities.base64Encode(hmac);
   return expected === signature;
