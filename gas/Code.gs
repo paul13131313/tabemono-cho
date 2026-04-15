@@ -39,31 +39,47 @@ function doGet(e) {
 // ============================================================
 function doPost(e) {
   try {
+    Logger.log('doPost called');
+
     // リクエストが空 → 即200
     if (!e || !e.postData || !e.postData.contents) {
+      Logger.log('empty request');
       return ContentService.createTextOutput('ok');
     }
 
     var body = e.postData.contents;
+    Logger.log('body: ' + body.substring(0, 500));
+
     var json = JSON.parse(body);
     var events = json.events || [];
+    Logger.log('events count: ' + events.length);
 
     // イベントが空（検証リクエスト等）→ 即200
     if (events.length === 0) {
+      Logger.log('no events, return ok');
       return ContentService.createTextOutput('ok');
     }
 
     var VERIFY_TOKEN = '00000000-0000-0000-0000-000000000000';
 
     events.forEach(function(event) {
-      // 検証用 replyToken → スキップ
-      if (event.replyToken === VERIFY_TOKEN) return;
+      Logger.log('event type: ' + event.type + ', replyToken: ' + (event.replyToken || 'none'));
 
-      if (event.type !== 'message' || event.message.type !== 'text') return;
+      // 検証用 replyToken → スキップ
+      if (event.replyToken === VERIFY_TOKEN) {
+        Logger.log('verify token, skip');
+        return;
+      }
+
+      if (event.type !== 'message' || event.message.type !== 'text') {
+        Logger.log('not text message, skip');
+        return;
+      }
 
       var replyToken = event.replyToken;
       var userId     = event.source.userId;
       var text       = event.message.text.trim();
+      Logger.log('text: ' + text + ', userId: ' + userId);
 
       // メンバー登録 / 更新
       upsertMember(userId);
