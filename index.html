@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>食べもの帳</title>
+  <meta property="og:title" content="食べもの帳" />
+  <meta property="og:description" content="LINEで食事を記録。カロリー・PFCを自動で管理。" />
+  <meta property="og:image" content="https://og-api-self.vercel.app/api/og?title=%E9%A3%9F%E3%81%B9%E3%82%82%E3%81%AE%E5%B8%B3&category=Tools%20%26%20Utility" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #e8b930;
+      font-family: 'DM Sans', 'Noto Serif JP', serif;
+      color: #1a1a1a;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ---- Header ---- */
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    header h1 {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #1a1a1a;
+    }
+    header p {
+      font-size: 0.85rem;
+      color: #5a4a10;
+      margin-top: 4px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ---- Card ---- */
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .card-title {
+      font-family: 'Noto Serif JP', serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #999;
+      margin-bottom: 12px;
+    }
+
+    /* ---- Summary ---- */
+    .summary-kcal {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 3rem;
+      font-weight: 700;
+      line-height: 1;
+      color: #1a1a1a;
+    }
+    .summary-kcal span {
+      font-size: 1rem;
+      font-weight: 400;
+      color: #999;
+      margin-left: 4px;
+    }
+    .pfc-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .pfc-item {
+      flex: 1;
+      text-align: center;
+      background: #f7f3e8;
+      border-radius: 12px;
+      padding: 12px 8px;
+    }
+    .pfc-item .label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #b89a20;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .pfc-item .value {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .pfc-item .unit {
+      font-size: 0.7rem;
+      color: #999;
+    }
+
+    /* ---- Log list ---- */
+    .log-list { list-style: none; }
+    .log-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0ece0;
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-item .food-name {
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+    .log-item .food-time {
+      font-size: 0.75rem;
+      color: #999;
+      margin-top: 2px;
+    }
+    .log-item .food-kcal {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      white-space: nowrap;
+    }
+
+    /* ---- Charts ---- */
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .chart-wrap canvas {
+      width: 100% !important;
+    }
+    .pfc-chart-wrap {
+      max-width: 200px;
+      margin: 0 auto;
+    }
+
+    /* ---- Empty state ---- */
+    .empty {
+      text-align: center;
+      padding: 32px 16px;
+      color: #999;
+      font-size: 0.9rem;
+    }
+
+    /* ---- Footer ---- */
+    footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 0.75rem;
+      color: #a08c30;
+      letter-spacing: 0.04em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>食事</h1>
+      <p>LINEで記録</p>
+    </header>
+
+    <!-- Today's Summary -->
+    <div class="card" id="summary-card">
+      <div class="card-title">Today</div>
+      <div class="summary-kcal" id="total-kcal">—<span>kcal</span></div>
+      <div class="pfc-row">
+        <div class="pfc-item">
+          <div class="label">Protein</div>
+          <div class="value" id="total-p">—</div>
+          <div class="unit">g</div>
+        </div>
+        <div class="pfc-item">
+          <div class="label">Fat</div>
+          <div class="value" id="total-f">—</div>
+          <div class="unit">g</div>
+        </div>
+        <div class="pfc-item">
+          <div class="label">Carbs</div>
+          <div class="value" id="total-c">—</div>
+          <div class="unit">g</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's Log -->
+    <div class="card">
+      <div class="card-title">Log</div>
+      <ul class="log-list" id="log-list">
+        <li class="empty">データを読み込み中...</li>
+      </ul>
+    </div>
+
+    <!-- 7-day Calorie Chart -->
+    <div class="card">
+      <div class="card-title">7-Day Calories</div>
+      <div class="chart-wrap">
+        <canvas id="calorie-chart" height="180"></canvas>
+      </div>
+    </div>
+
+    <!-- PFC Doughnut -->
+    <div class="card">
+      <div class="card-title">PFC Balance</div>
+      <div class="chart-wrap pfc-chart-wrap">
+        <canvas id="pfc-chart" height="200"></canvas>
+      </div>
+    </div>
+
+    <footer>食べもの帳 — LINE Bot で食事管理</footer>
+  </div>
+
+  <script>
+    var GAS_API_URL = 'YOUR_GAS_URL';
+
+    // ---- Helpers ----
+    function toJSTDateStr(d) {
+      var dt = new Date(d);
+      var offset = dt.getTime() + 9 * 60 * 60 * 1000;
+      var jst = new Date(offset);
+      return jst.getUTCFullYear() + '-'
+        + String(jst.getUTCMonth() + 1).padStart(2, '0') + '-'
+        + String(jst.getUTCDate()).padStart(2, '0');
+    }
+
+    function toJSTTimeStr(d) {
+      var dt = new Date(d);
+      var offset = dt.getTime() + 9 * 60 * 60 * 1000;
+      var jst = new Date(offset);
+      return String(jst.getUTCHours()).padStart(2, '0') + ':'
+        + String(jst.getUTCMinutes()).padStart(2, '0');
+    }
+
+    function todayStr() {
+      return toJSTDateStr(new Date());
+    }
+
+    function last7Days() {
+      var days = [];
+      for (var i = 6; i >= 0; i--) {
+        var d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push(toJSTDateStr(d));
+      }
+      return days;
+    }
+
+    // ---- Fetch & Render ----
+    function fetchData() {
+      fetch(GAS_API_URL + '?action=getData')
+        .then(function(r) { return r.json(); })
+        .then(function(data) { render(data.logs || []); })
+        .catch(function() { renderEmpty(); });
+    }
+
+    function render(logs) {
+      var today = todayStr();
+      var todayLogs = logs.filter(function(l) { return toJSTDateStr(l.timestamp) === today; });
+
+      // Summary
+      var cal = 0, p = 0, f = 0, c = 0;
+      todayLogs.forEach(function(l) {
+        cal += Number(l.totalCal) || 0;
+        p   += Number(l.totalP)   || 0;
+        f   += Number(l.totalF)   || 0;
+        c   += Number(l.totalC)   || 0;
+      });
+
+      document.getElementById('total-kcal').innerHTML = cal + '<span>kcal</span>';
+      document.getElementById('total-p').textContent  = p;
+      document.getElementById('total-f').textContent  = f;
+      document.getElementById('total-c').textContent  = c;
+
+      // Log list
+      var listEl = document.getElementById('log-list');
+      if (todayLogs.length === 0) {
+        listEl.innerHTML = '<li class="empty">今日の記録はまだありません</li>';
+      } else {
+        listEl.innerHTML = '';
+        todayLogs.forEach(function(l) {
+          var foods = [];
+          try { foods = JSON.parse(l.foods); } catch(e) {}
+          var time = toJSTTimeStr(l.timestamp);
+          foods.forEach(function(fd) {
+            var li = document.createElement('li');
+            li.className = 'log-item';
+            li.innerHTML = '<div><div class="food-name">' + fd.name + '</div>'
+              + '<div class="food-time">' + time + '</div></div>'
+              + '<div class="food-kcal">' + fd.cal + ' kcal</div>';
+            listEl.appendChild(li);
+          });
+        });
+      }
+
+      // 7-day chart
+      var days = last7Days();
+      var dailyCal = days.map(function(day) {
+        var total = 0;
+        logs.forEach(function(l) {
+          if (toJSTDateStr(l.timestamp) === day) total += Number(l.totalCal) || 0;
+        });
+        return total;
+      });
+
+      new Chart(document.getElementById('calorie-chart'), {
+        type: 'line',
+        data: {
+          labels: days.map(function(d) { return d.slice(5); }),
+          datasets: [{
+            data: dailyCal,
+            borderColor: '#e8b930',
+            backgroundColor: 'rgba(232,185,48,0.12)',
+            fill: true,
+            tension: 0.35,
+            pointBackgroundColor: '#e8b930',
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            borderWidth: 3
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#f0ece0' }, ticks: { font: { family: 'DM Sans' } } },
+            x: { grid: { display: false }, ticks: { font: { family: 'DM Sans' } } }
+          }
+        }
+      });
+
+      // PFC doughnut
+      var pfcTotal = p + f + c;
+      new Chart(document.getElementById('pfc-chart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Protein', 'Fat', 'Carbs'],
+          datasets: [{
+            data: pfcTotal > 0 ? [p, f, c] : [1, 1, 1],
+            backgroundColor: ['#e8b930', '#1a1a1a', '#c9a828'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          cutout: '65%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { font: { family: 'DM Sans', size: 12 }, padding: 16 }
+            }
+          }
+        }
+      });
+    }
+
+    function renderEmpty() {
+      document.getElementById('log-list').innerHTML =
+        '<li class="empty">データを取得できませんでした</li>';
+    }
+
+    // ---- Init ----
+    if (GAS_API_URL !== 'YOUR_GAS_URL') {
+      fetchData();
+    } else {
+      document.getElementById('log-list').innerHTML =
+        '<li class="empty">GAS_API_URL を設定してください</li>';
+    }
+  </script>
+</body>
+</html>
