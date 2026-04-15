@@ -552,12 +552,7 @@
     }
 
     // ---- Init ----
-    if (GAS_API_URL !== 'https://script.google.com/macros/s/AKfycbwXrf8DqXS3dqLWaGogTI-IdtSLT8i8UEbEVSV22wNJPEGASRk_r37mDtr_-ZjeXLcJew/exec') {
-      fetchData();
-    } else {
-      document.getElementById('log-list').innerHTML =
-        '<li class="empty">GAS_API_URL を設定してください</li>';
-    }
+    fetchData();
   </script>
 </body>
 </html>
