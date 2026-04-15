@@ -12,128 +12,231 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
-      background: #e8b930;
-      font-family: 'DM Sans', 'Noto Serif JP', serif;
-      color: #1a1a1a;
-      min-height: 100vh;
-      padding: 24px 16px 48px;
+    :root {
+      --primary: #1F61F7;
+      --accent: #FF5C24;
+      --bg: #E5E5E5;
+      --card: #FFFFFF;
+      --text: #1a1a1a;
+      --text-sub: #888;
+      --border: #D5D5D5;
+      --radius: 16px;
     }
 
-    .container {
-      max-width: 480px;
-      margin: 0 auto;
+    body {
+      background: var(--bg);
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ---- Layout ---- */
+    .page {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ---- Sidebar ---- */
+    .sidebar {
+      width: 72px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      z-index: 10;
+    }
+    .sidebar-logo {
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.1rem;
+      margin-bottom: 32px;
+    }
+    .sidebar nav {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+    .nav-item {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      color: var(--text-sub);
+      font-size: 1.2rem;
+    }
+    .nav-item:hover { background: var(--bg); color: var(--text); }
+    .nav-item.active { background: var(--primary); color: #fff; }
+    .sidebar-bottom {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ---- Main ---- */
+    .main {
+      margin-left: 72px;
+      flex: 1;
+      padding: 40px 40px 64px;
+      max-width: 960px;
     }
 
     /* ---- Header ---- */
-    header {
-      text-align: center;
-      margin-bottom: 28px;
+    .page-header {
+      margin-bottom: 36px;
     }
-    header h1 {
-      font-family: 'Noto Serif JP', serif;
-      font-size: 2.4rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: #1a1a1a;
+    .page-header h1 {
+      font-size: 2.6rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--text);
     }
-    header p {
-      font-size: 0.85rem;
-      color: #5a4a10;
-      margin-top: 4px;
-      letter-spacing: 0.04em;
+    .page-header h1 .accent { color: var(--accent); }
+    .page-header p {
+      font-size: 0.9rem;
+      color: var(--text-sub);
+      margin-top: 8px;
+      font-weight: 500;
     }
 
-    /* ---- Card ---- */
-    .card {
-      background: #fff;
-      border-radius: 18px;
-      padding: 24px;
-      margin-bottom: 18px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    /* ---- Cards Grid ---- */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
     }
-    .card-title {
-      font-family: 'Noto Serif JP', serif;
-      font-size: 0.8rem;
+    .grid .span-2 { grid-column: span 2; }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 24px;
+      border: 1px solid var(--border);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    .card-label {
+      font-size: 0.7rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #999;
+      letter-spacing: 0.12em;
+      color: var(--text-sub);
       margin-bottom: 12px;
     }
 
-    /* ---- Summary ---- */
-    .summary-kcal {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 3rem;
-      font-weight: 700;
-      line-height: 1;
-      color: #1a1a1a;
+    /* ---- Summary Card (blue hero) ---- */
+    .card-hero {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      position: relative;
+      overflow: hidden;
     }
-    .summary-kcal span {
+    .card-hero::after {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 140px;
+      height: 140px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 50%;
+    }
+    .card-hero .card-label { color: rgba(255,255,255,0.6); }
+    .hero-kcal {
+      font-size: 3.6rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+    .hero-kcal .unit {
       font-size: 1rem;
-      font-weight: 400;
-      color: #999;
+      font-weight: 500;
+      opacity: 0.6;
       margin-left: 4px;
     }
+
+    /* ---- PFC Chips ---- */
     .pfc-row {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       margin-top: 16px;
     }
-    .pfc-item {
+    .pfc-chip {
       flex: 1;
       text-align: center;
-      background: #f7f3e8;
+      background: rgba(255,255,255,0.12);
       border-radius: 12px;
-      padding: 12px 8px;
+      padding: 12px 6px;
     }
-    .pfc-item .label {
-      font-size: 0.7rem;
+    .pfc-chip .chip-label {
+      font-size: 0.65rem;
       font-weight: 700;
-      color: #b89a20;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
+      opacity: 0.6;
     }
-    .pfc-item .value {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 1.4rem;
-      font-weight: 700;
-      margin-top: 4px;
+    .pfc-chip .chip-value {
+      font-size: 1.5rem;
+      font-weight: 900;
+      margin-top: 2px;
     }
-    .pfc-item .unit {
-      font-size: 0.7rem;
-      color: #999;
+    .pfc-chip .chip-unit {
+      font-size: 0.65rem;
+      opacity: 0.5;
     }
 
-    /* ---- Log list ---- */
+    /* ---- Log List ---- */
     .log-list { list-style: none; }
     .log-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid #f0ece0;
+      padding: 14px 0;
+      border-bottom: 1px solid #eee;
     }
     .log-item:last-child { border-bottom: none; }
-    .log-item .food-name {
-      font-weight: 500;
+    .food-name {
+      font-weight: 600;
       font-size: 0.95rem;
     }
-    .log-item .food-time {
+    .food-time {
       font-size: 0.75rem;
-      color: #999;
+      color: var(--text-sub);
       margin-top: 2px;
     }
-    .log-item .food-kcal {
-      font-family: 'DM Sans', sans-serif;
+    .food-kcal {
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 0.95rem;
+      color: var(--accent);
       white-space: nowrap;
     }
 
@@ -142,91 +245,168 @@
       position: relative;
       width: 100%;
     }
-    .chart-wrap canvas {
-      width: 100% !important;
-    }
+    .chart-wrap canvas { width: 100% !important; }
     .pfc-chart-wrap {
-      max-width: 200px;
+      max-width: 180px;
       margin: 0 auto;
     }
 
-    /* ---- Empty state ---- */
+    /* ---- Empty ---- */
     .empty {
       text-align: center;
-      padding: 32px 16px;
-      color: #999;
+      padding: 28px 16px;
+      color: var(--text-sub);
       font-size: 0.9rem;
     }
 
     /* ---- Footer ---- */
     footer {
       text-align: center;
-      margin-top: 32px;
+      margin-top: 40px;
       font-size: 0.75rem;
-      color: #a08c30;
+      color: #aaa;
       letter-spacing: 0.04em;
+    }
+
+    /* ---- Decorative dots ---- */
+    .deco-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot-blue { background: var(--primary); }
+    .dot-orange { background: var(--accent); }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .main {
+        margin-left: 0;
+        padding: 24px 16px 48px;
+      }
+      .page-header h1 { font-size: 2rem; }
+      .grid { grid-template-columns: 1fr; }
+      .grid .span-2 { grid-column: span 1; }
+      .hero-kcal { font-size: 2.8rem; }
+
+      /* Mobile nav bar */
+      .mobile-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--card);
+        border-top: 1px solid var(--border);
+        padding: 8px 0;
+        z-index: 10;
+        justify-content: center;
+        gap: 8px;
+      }
+    }
+    @media (min-width: 641px) {
+      .mobile-nav { display: none; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>食事</h1>
-      <p>LINEで記録</p>
-    </header>
+  <div class="page">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">食</div>
+      <nav>
+        <div class="nav-item active" title="ダッシュボード">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+        <div class="nav-item" title="カロリー推移">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="nav-item" title="PFCバランス">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+        </div>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="deco-dot dot-orange"></div>
+        <div class="deco-dot dot-blue"></div>
+      </div>
+    </aside>
 
-    <!-- Today's Summary -->
-    <div class="card" id="summary-card">
-      <div class="card-title">Today</div>
-      <div class="summary-kcal" id="total-kcal">—<span>kcal</span></div>
-      <div class="pfc-row">
-        <div class="pfc-item">
-          <div class="label">Protein</div>
-          <div class="value" id="total-p">—</div>
-          <div class="unit">g</div>
+    <!-- Main -->
+    <main class="main">
+      <div class="page-header">
+        <h1>食事<span class="accent">.</span></h1>
+        <p>LINEで記録 &mdash; カロリー・PFCを自動管理</p>
+      </div>
+
+      <div class="grid">
+        <!-- Hero Summary -->
+        <div class="card card-hero span-2">
+          <div class="card-label">Today</div>
+          <div class="hero-kcal" id="total-kcal">—<span class="unit">kcal</span></div>
+          <div class="pfc-row">
+            <div class="pfc-chip">
+              <div class="chip-label">Protein</div>
+              <div class="chip-value" id="total-p">—</div>
+              <div class="chip-unit">g</div>
+            </div>
+            <div class="pfc-chip">
+              <div class="chip-label">Fat</div>
+              <div class="chip-value" id="total-f">—</div>
+              <div class="chip-unit">g</div>
+            </div>
+            <div class="pfc-chip">
+              <div class="chip-label">Carbs</div>
+              <div class="chip-value" id="total-c">—</div>
+              <div class="chip-unit">g</div>
+            </div>
+          </div>
         </div>
-        <div class="pfc-item">
-          <div class="label">Fat</div>
-          <div class="value" id="total-f">—</div>
-          <div class="unit">g</div>
+
+        <!-- Log -->
+        <div class="card span-2">
+          <div class="card-label">Log</div>
+          <ul class="log-list" id="log-list">
+            <li class="empty">データを読み込み中...</li>
+          </ul>
         </div>
-        <div class="pfc-item">
-          <div class="label">Carbs</div>
-          <div class="value" id="total-c">—</div>
-          <div class="unit">g</div>
+
+        <!-- 7-day Chart -->
+        <div class="card">
+          <div class="card-label">7-Day Calories</div>
+          <div class="chart-wrap">
+            <canvas id="calorie-chart" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- PFC Doughnut -->
+        <div class="card">
+          <div class="card-label">PFC Balance</div>
+          <div class="chart-wrap pfc-chart-wrap">
+            <canvas id="pfc-chart" height="200"></canvas>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Today's Log -->
-    <div class="card">
-      <div class="card-title">Log</div>
-      <ul class="log-list" id="log-list">
-        <li class="empty">データを読み込み中...</li>
-      </ul>
-    </div>
+      <footer>食べもの帳 &mdash; LINE Bot</footer>
+    </main>
 
-    <!-- 7-day Calorie Chart -->
-    <div class="card">
-      <div class="card-title">7-Day Calories</div>
-      <div class="chart-wrap">
-        <canvas id="calorie-chart" height="180"></canvas>
+    <!-- Mobile bottom nav -->
+    <div class="mobile-nav">
+      <div class="nav-item active">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </div>
+      <div class="nav-item">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <div class="nav-item">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
       </div>
     </div>
-
-    <!-- PFC Doughnut -->
-    <div class="card">
-      <div class="card-title">PFC Balance</div>
-      <div class="chart-wrap pfc-chart-wrap">
-        <canvas id="pfc-chart" height="200"></canvas>
-      </div>
-    </div>
-
-    <footer>食べもの帳 — LINE Bot で食事管理</footer>
   </div>
 
   <script>
-    var GAS_API_URL = 'YOUR_GAS_URL';
+    var GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwXrf8DqXS3dqLWaGogTI-IdtSLT8i8UEbEVSV22wNJPEGASRk_r37mDtr_-ZjeXLcJew/exec';
 
     // ---- Helpers ----
     function toJSTDateStr(d) {
@@ -281,7 +461,7 @@
         c   += Number(l.totalC)   || 0;
       });
 
-      document.getElementById('total-kcal').innerHTML = cal + '<span>kcal</span>';
+      document.getElementById('total-kcal').innerHTML = cal + '<span class="unit">kcal</span>';
       document.getElementById('total-p').textContent  = p;
       document.getElementById('total-f').textContent  = f;
       document.getElementById('total-c').textContent  = c;
@@ -323,21 +503,21 @@
           labels: days.map(function(d) { return d.slice(5); }),
           datasets: [{
             data: dailyCal,
-            borderColor: '#e8b930',
-            backgroundColor: 'rgba(232,185,48,0.12)',
+            borderColor: '#1F61F7',
+            backgroundColor: 'rgba(31,97,247,0.08)',
             fill: true,
-            tension: 0.35,
-            pointBackgroundColor: '#e8b930',
+            tension: 0.4,
+            pointBackgroundColor: '#1F61F7',
             pointRadius: 5,
             pointHoverRadius: 7,
-            borderWidth: 3
+            borderWidth: 2.5
           }]
         },
         options: {
           plugins: { legend: { display: false } },
           scales: {
-            y: { beginAtZero: true, grid: { color: '#f0ece0' }, ticks: { font: { family: 'DM Sans' } } },
-            x: { grid: { display: false }, ticks: { font: { family: 'DM Sans' } } }
+            y: { beginAtZero: true, grid: { color: '#eee' }, ticks: { font: { family: 'Inter' } } },
+            x: { grid: { display: false }, ticks: { font: { family: 'Inter' } } }
           }
         }
       });
@@ -350,16 +530,16 @@
           labels: ['Protein', 'Fat', 'Carbs'],
           datasets: [{
             data: pfcTotal > 0 ? [p, f, c] : [1, 1, 1],
-            backgroundColor: ['#e8b930', '#1a1a1a', '#c9a828'],
+            backgroundColor: ['#1F61F7', '#FF5C24', '#E5E5E5'],
             borderWidth: 0
           }]
         },
         options: {
-          cutout: '65%',
+          cutout: '68%',
           plugins: {
             legend: {
               position: 'bottom',
-              labels: { font: { family: 'DM Sans', size: 12 }, padding: 16 }
+              labels: { font: { family: 'Inter', size: 11, weight: 600 }, padding: 14, usePointStyle: true, pointStyle: 'circle' }
             }
           }
         }
@@ -372,7 +552,7 @@
     }
 
     // ---- Init ----
-    if (GAS_API_URL !== 'YOUR_GAS_URL') {
+    if (GAS_API_URL !== 'https://script.google.com/macros/s/AKfycbwXrf8DqXS3dqLWaGogTI-IdtSLT8i8UEbEVSV22wNJPEGASRk_r37mDtr_-ZjeXLcJew/exec') {
       fetchData();
     } else {
       document.getElementById('log-list').innerHTML =
